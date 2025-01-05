@@ -1,4 +1,4 @@
-from sqlmodel import Field, SQLModel, create_engine, Session, select
+from sqlmodel import Field, SQLModel, create_engine, Session, select, func
 from datetime import date
 
 class Expense(SQLModel, table = True):
@@ -25,15 +25,24 @@ def add_expense(date, amount, cat_id):
         session.add(expense)
         session.commit()
 
-def add_category(nom):
+def add_category(name):
     with Session(engine) as session:
-        category = Category(nom=nom)
+        category = Category(name=name)
         session.add(category)
-        session.commit
+        session.commit()
 
-def get_expenses():
-    pass
-
+def get_expenses_by_category(start_date=None, end_date=None, category_id=None):
+    with Session(engine) as session:
+        query = select(Category.name, SQLModel.func.sum(Expense.amount)).join(Expense).group_by(Category.name)
+        
+        if start_date and end_date:
+            query = query.where(Expense.date.between(start_date, end_date))
+        
+        if category_id:
+            query = query.where(Expense.cat_id == category_id)
+        
+        result = session.exec(query).all()
+        return dict(result)
 
 def get_categories():
     with Session(engine) as session:
