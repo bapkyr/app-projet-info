@@ -90,6 +90,14 @@ def get_categories():
         return session.exec(select(Category)).all()
     
 
+def get_expenses_grouped_by_date():
+    with Session(engine) as session:
+        query = select(
+            func.strftime('%Y-%m', Expense.date),
+            func.sum(Expense.montant)  
+        ).group_by(func.strftime('%Y-%m', Expense.date))
+
+        return session.exec(query).all()
 
 
 def main():
