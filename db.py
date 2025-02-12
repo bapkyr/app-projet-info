@@ -110,6 +110,7 @@ def main():
     update_category()
     del_category()
     get_categories()
+    get_expenses_grouped_by_date()
 
 
 if __name__ == '__main__':
