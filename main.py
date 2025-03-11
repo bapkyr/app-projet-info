@@ -2,7 +2,7 @@ import flet as ft
 from db import create_db
 from dashboard import dashboard_page
 
-def main(page: ft.page):
+def main(page: ft.Page):
     create_db()
     
     page.title = "Gestion de budget"
