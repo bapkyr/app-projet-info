@@ -1,3 +1,6 @@
 venv/
 venvw/
+venv_old/
+old_venvw/
 __pycache__/
+requirements.txt/
