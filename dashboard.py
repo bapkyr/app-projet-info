@@ -14,15 +14,39 @@ def dashboard_page(page: ft.Page):
     months = [item[0] for item in data_date] if data_date else []
     monthly_totals = [item[1] for item in data_date] if data_date else []
     
-    fig_category = px.pie(names=categories, values=totals, title="Dépenses par Catégorie") if categories else px.pie(names=["Aucune donnée"], values=[1], title="Aucune dépense")
-    fig_date = px.bar(x=months, y=monthly_totals, title="Évolution des Dépenses Mensuelles") if months else px.bar(x=["Aucune donnée"], y=[0], title="Pas de données")
+    #Pie chart
+    pie_chart = ft.PieChart(
+        sections=[
+            ft.PieChartSection(value=totals[i], title=categories[i])
+            for i in range(len(categories))
+        ] if categories else [
+            ft.PieChartSection(value=1, title="Aucune donnée")
+        ],
+        width=400,
+        height=400,
+        sections_space=2,
+        center_space_radius=40,
+    )
 
+
+    #Bar chart
+    bar_chart = ft.BarChart(
+        data=[
+            ft.BarChartData(x=months[i], y=monthly_totals[i])
+            for i in range(len(months))
+        ] if months else [
+            ft.BarChartData(x="Aucune donnée", y=0)
+        ],
+        width=600,
+        height=400,
+        bar_width=30,
+    )
 
     return ft.Column([
         ft.Text("🏠 Tableau de Bord", size=32, weight=ft.FontWeight.BOLD),
-        ft.Text(f"💰 Dépenses Totales : {total_expenses} €", size=24, color="red"),
-        ft.PlotlyChart(fig_category, expand=True) if fig_category else ft.Text("Aucune dépense enregistrée"),
-        ft.PlotlyChart(fig_date, expand=True) if fig_date else ft.Text("Pas de données sur l'évolution des dépenses"),
+        ft.Text(f"💰 Dépenses Totales : {total_expenses} chf", size=24, color="red"),
+        pie_chart,
+        bar_chart,
         ft.Row([
             ft.ElevatedButton("➕ Ajouter Dépense", on_click=lambda e: page.go("/add-expense")),
             ft.ElevatedButton("📂 Voir Catégories", on_click=lambda e: page.go("/categories")),
