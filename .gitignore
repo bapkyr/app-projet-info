@@ -1,6 +1,3 @@
-venv/
-venvw/
-venv_old/
-old_venvw/
+.venv/
 __pycache__/
 requirements.txt/
