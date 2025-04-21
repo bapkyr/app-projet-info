@@ -1,6 +1,7 @@
 import flet as ft
 from db import create_db
 from dashboard import dashboard_page
+from categories import categories_page
 
 def main(page: ft.Page):
     create_db()
@@ -11,7 +12,7 @@ def main(page: ft.Page):
 
     navigation_bar = ft.Row([
             ft.ElevatedButton("🏠 Accueil", on_click=lambda e: page.go('/')),
-            ft.ElevatedButton("📂 Catégories", on_click=lambda e: page.go('/category')),
+            ft.ElevatedButton("📂 Catégories", on_click=lambda e: page.go('/categories')),
             ft.ElevatedButton("💸 Dépenses", on_click=lambda e: page.go('/expenses')),
         ], alignment=ft.MainAxisAlignment.CENTER)
 
@@ -21,10 +22,10 @@ def main(page: ft.Page):
 
         if route == '/':
             page.add(dashboard_page(page))
-        elif route == '/category':
-            pass
+        elif route == '/categories':
+            page.add(categories_page(page))
         elif route == '/expenses':
-            pass
+            page.add(ft.Text("Dépenses Page"))
         else:
             page.add(ft.Text("Page non trouvée"))
         
