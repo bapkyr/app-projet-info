@@ -104,10 +104,14 @@ def get_expenses_grouped_by_date():
 
 def populate_db():
     with Session(engine) as session:
-        if session.exec(select(Expense)).first():
-            print("La base contient déjà des dépenses.")
-            return
+        # Supprimer toutes les dépenses et catégories existantes
+        session.exec(select(Expense)).delete(synchronize_session=False)
+        session.exec(select(Category)).delete(synchronize_session=False)
+        session.commit()
 
+        print("Base de données réinitialisée.")
+
+        # Ajouter des catégories
         categories = [
             Category(name="Alimentation"),
             Category(name="Transport"),
@@ -119,15 +123,12 @@ def populate_db():
 
         cats_by_name = {cat.name: cat for cat in session.exec(select(Category)).all()}
 
+        # Ajouter des dépenses
         expenses = [
             Expense(date=date(2024, 1, 5), amount=50, cat_id=cats_by_name["Alimentation"].id),
-            Expense(date=date(2024, 1, 10), amount=30, cat_id=cats_by_name["Transport"].id),
             Expense(date=date(2024, 2, 15), amount=20, cat_id=cats_by_name["Loisirs"].id),
-            Expense(date=date(2024, 2, 20), amount=100, cat_id=cats_by_name["Alimentation"].id),
             Expense(date=date(2024, 3, 25), amount=200, cat_id=cats_by_name["Transport"].id),
-            Expense(date=date(2024, 3, 30), amount=150, cat_id=cats_by_name["Loisirs"].id),
             Expense(date=date(2024, 4, 5), amount=80, cat_id=cats_by_name["Alimentation"].id),
-            Expense(date=date(2024, 4, 10), amount=60, cat_id=cats_by_name["Transport"].id),
             Expense(date=date(2024, 5, 15), amount=40, cat_id=cats_by_name["Loisirs"].id),
         ]
 
@@ -135,7 +136,6 @@ def populate_db():
         session.commit()
 
         print("Données fictives ajoutées avec succès !")
-
 
 def remove_duplicate_categories():
     with Session(engine) as session:
@@ -161,17 +161,11 @@ def remove_duplicate_categories():
 
 def main():
     create_db()
-    remove_duplicate_categories()
     populate_db()
-    update_expense()
-    del_expense()
     get_expenses_by_category()
     add_category()
-    update_category()
-    del_category()
     get_categories()
     get_expenses_grouped_by_date()
-    remove_duplicate_categories()
 
 if __name__ == '__main__':
     main()
