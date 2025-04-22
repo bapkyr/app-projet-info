@@ -62,6 +62,10 @@ def get_expenses_by_category(start_date=None, end_date=None, category_id=None):
 
 def add_category(name):
     with Session(engine) as session:
+        existing_category = session.exec(select(Category).where(Category.name == name)).first()
+        if existing_category:
+            print(f"La catégorie '{name}' existe déjà.")
+            return
         category = Category(name=name)
         session.add(category)
         session.commit()
@@ -127,9 +131,31 @@ def populate_db():
 
         print("Données fictives ajoutées avec succès !")
 
+def remove_duplicate_categories():
+    with Session(engine) as session:
+        # Trouver les catégories en double
+        categories = session.exec(select(Category.name)).all()
+        unique_categories = set()
+        duplicates = []
+
+        for category in categories:
+            if category[0] in unique_categories:
+                duplicates.append(category[0])
+            else:
+                unique_categories.add(category[0])
+
+        # Supprimer les doublons
+        for duplicate in duplicates:
+            duplicate_categories = session.exec(select(Category).where(Category.name == duplicate)).all()
+            for cat in duplicate_categories[1:]:  # Garder la première occurrence
+                session.delete(cat)
+
+        session.commit()
+        print("Les doublons ont été supprimés.")
 
 def main():
     create_db()
+    remove_duplicate_categories()
     populate_db()
     update_expense()
     del_expense()
@@ -139,7 +165,7 @@ def main():
     del_category()
     get_categories()
     get_expenses_grouped_by_date()
-
+    remove_duplicate_categories()
 
 if __name__ == '__main__':
     main()
