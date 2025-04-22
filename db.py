@@ -107,7 +107,7 @@ def populate_db():
         if session.exec(select(Expense)).first():
             print("La base contient déjà des dépenses.")
             return
-        
+
         categories = [
             Category(name="Alimentation"),
             Category(name="Transport"),
@@ -117,19 +117,25 @@ def populate_db():
         session.add_all(categories)
         session.commit()
 
-        categories = session.exec(select(Category)).all()  # Récupérer les catégories avec leurs ID
+        cats_by_name = {cat.name: cat for cat in session.exec(select(Category)).all()}
 
         expenses = [
-            Expense(date=date(2024, 1, 5), amount=50, cat_id=categories[0].id),
-            Expense(date=date(2024, 1, 10), amount=30, cat_id=categories[1].id),
-            Expense(date=date(2024, 2, 15), amount=20, cat_id=categories[2].id),
-            Expense(date=date(2024, 2, 20), amount=100, cat_id=categories[0].id),
+            Expense(date=date(2024, 1, 5), amount=50, cat_id=cats_by_name["Alimentation"].id),
+            Expense(date=date(2024, 1, 10), amount=30, cat_id=cats_by_name["Transport"].id),
+            Expense(date=date(2024, 2, 15), amount=20, cat_id=cats_by_name["Loisirs"].id),
+            Expense(date=date(2024, 2, 20), amount=100, cat_id=cats_by_name["Alimentation"].id),
+            Expense(date=date(2024, 3, 25), amount=200, cat_id=cats_by_name["Transport"].id),
+            Expense(date=date(2024, 3, 30), amount=150, cat_id=cats_by_name["Loisirs"].id),
+            Expense(date=date(2024, 4, 5), amount=80, cat_id=cats_by_name["Alimentation"].id),
+            Expense(date=date(2024, 4, 10), amount=60, cat_id=cats_by_name["Transport"].id),
+            Expense(date=date(2024, 5, 15), amount=40, cat_id=cats_by_name["Loisirs"].id),
         ]
-        
+
         session.add_all(expenses)
         session.commit()
 
         print("Données fictives ajoutées avec succès !")
+
 
 def remove_duplicate_categories():
     with Session(engine) as session:
