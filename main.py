@@ -1,11 +1,11 @@
 import flet as ft
-from db import create_db
+from db import create_db, populate_db
 from dashboard import dashboard_page
 from categories import categories_page
 
 def main(page: ft.Page):
     create_db()
-
+    populate_db()
     page.title = "Gestion de budget"
     page.window_width = 900
     page.window_height = 600

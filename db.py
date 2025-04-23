@@ -1,6 +1,7 @@
 from sqlmodel import Field, SQLModel, create_engine, Session, select, func, Relationship
-from sqlalchemy import between, cast, Float
+from sqlalchemy import between, cast, Float, delete
 from datetime import date
+from collections import OrderedDict
 
 class Expense(SQLModel, table = True):
     id: int | None = Field(default= None, primary_key=True)
@@ -53,10 +54,6 @@ def get_expenses_by_category(start_date=None, end_date=None, category_id=None):
     with Session(engine) as session:
         query = select(Category.name, cast(func.sum(Expense.amount), Float)).join(Expense).group_by(Category.name)
         result = session.exec(query).all()
-        
-        print("📊 Données brutes récupérées :", result)  # Debug
-        for item in result:
-            print(f"🧐 Catégorie : {item[0]}, Valeur : {item[1]}, Type : {type(item[1])}")
        
         return result
 
@@ -97,20 +94,23 @@ def get_expenses_grouped_by_date():
     with Session(engine) as session:
         query = select(
             func.strftime('%Y-%m', Expense.date),
-            func.sum(Expense.amount)  
+            func.sum(Expense.amount)
         ).group_by(func.strftime('%Y-%m', Expense.date))
+        result = session.exec(query).all()
 
-        return session.exec(query).all()
+        from collections import OrderedDict
+        all_months = OrderedDict((f"2024-{str(m).zfill(2)}", 0) for m in range(1, 13))
+        for month, total in result:
+            all_months[month] = float(total)
+        return list(all_months.items())
+
 
 def populate_db():
     with Session(engine) as session:
-        # Supprimer toutes les dépenses et catégories existantes
-        session.exec(select(Expense)).delete(synchronize_session=False)
-        session.exec(select(Category)).delete(synchronize_session=False)
+        #supprimer la base de donnnées existante
+        session.exec(delete(Expense))
+        session.exec(delete(Category))
         session.commit()
-
-        print("Base de données réinitialisée.")
-
         # Ajouter des catégories
         categories = [
             Category(name="Alimentation"),
@@ -135,35 +135,12 @@ def populate_db():
         session.add_all(expenses)
         session.commit()
 
-        print("Données fictives ajoutées avec succès !")
 
-def remove_duplicate_categories():
-    with Session(engine) as session:
-        # Trouver les catégories en double
-        categories = session.exec(select(Category.name)).all()
-        unique_categories = set()
-        duplicates = []
-
-        for category in categories:
-            if category[0] in unique_categories:
-                duplicates.append(category[0])
-            else:
-                unique_categories.add(category[0])
-
-        # Supprimer les doublons
-        for duplicate in duplicates:
-            duplicate_categories = session.exec(select(Category).where(Category.name == duplicate)).all()
-            for cat in duplicate_categories[1:]:  # Garder la première occurrence
-                session.delete(cat)
-
-        session.commit()
-        print("Les doublons ont été supprimés.")
 
 def main():
     create_db()
     populate_db()
     get_expenses_by_category()
-    add_category()
     get_categories()
     get_expenses_grouped_by_date()
 
