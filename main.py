@@ -4,6 +4,7 @@ from dashboard import dashboard_page
 from categories import categories_page
 
 def main(page: ft.Page):
+    page.scroll = ft.ScrollMode.ALWAYS
     create_db()
     populate_db()
     page.title = "Gestion de budget"

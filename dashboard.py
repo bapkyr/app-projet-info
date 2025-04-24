@@ -5,10 +5,13 @@ import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 from db import get_expenses_by_category, get_expenses_grouped_by_date, get_categories
 from statistics import mean
+import urllib.parse
 
 
 def dashboard_page(page: ft.Page):
-    params = page.route_query
+    parsed = urllib.parse.urlparse(page.route)
+    params = dict(urllib.parse.parse_qsl(parsed.query))
+
     selected_month = params.get("month")
     selected_category = params.get("cat")
 
@@ -104,23 +107,19 @@ def dashboard_page(page: ft.Page):
             ]), padding=10, bgcolor=ft.colors.TEAL_50)),
         ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
 
-        ft.Row([
-            ft.Card(content=ft.Container(
-                content=MatplotlibChart(fig_bar, expand=True),
-                padding=10,
-                width=420,
-                bgcolor=ft.colors.BLUE_50,
-                border_radius=10
-            )),
+        ft.Card(content=ft.Container(
+            content=MatplotlibChart(fig_bar, expand=True),
+            padding=10,
+            bgcolor=ft.colors.BLUE_50,
+            border_radius=10
+        )),
 
-            ft.Card(content=ft.Container(
-                content=MatplotlibChart(fig_line, expand=True),
-                padding=10,
-                width=420,
-                bgcolor=ft.colors.ORANGE_50,
-                border_radius=10
-            )),
-        ], alignment=ft.MainAxisAlignment.CENTER),
+        ft.Card(content=ft.Container(
+            content=MatplotlibChart(fig_line, expand=True),
+            padding=10,
+            bgcolor=ft.colors.ORANGE_50,
+            border_radius=10
+        )),
 
         ft.Row([
             ft.ElevatedButton("➕ Ajouter Dépense", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-expense")),
