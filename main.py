@@ -2,6 +2,9 @@ import flet as ft
 from db import create_db, populate_db
 from dashboard import dashboard_page
 from categories import categories_page
+from expenses import expenses_page
+from edit_expenses import add_expense_page, edit_expense_page, delete_expense_page
+
 
 def main(page: ft.Page):
     page.scroll = ft.ScrollMode.ALWAYS
@@ -26,7 +29,18 @@ def main(page: ft.Page):
         elif route == '/categories':
             page.add(categories_page(page))
         elif route == '/expenses':
-            page.add(ft.Text("Dépenses Page"))
+            page.add(expenses_page(page))
+        elif route == '/add-expense':
+            page.add(add_expense_page(page))
+
+        elif route.startswith('/edit-expense/'):
+            expense_id = int(route.split('/')[-1])
+            page.add(edit_expense_page(page, expense_id))
+
+        elif route.startswith('/delete-expense/'):
+            expense_id = int(route.split('/')[-1])
+            page.add(delete_expense_page(page, expense_id))
+
         else:
             page.add(ft.Text("Page non trouvée"))
         

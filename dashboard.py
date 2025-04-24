@@ -5,24 +5,26 @@ import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 from db import get_expenses_by_category, get_expenses_grouped_by_date, get_categories
 from statistics import mean
-import urllib.parse
+import datetime
+from datetime import timedelta
 
 
 def dashboard_page(page: ft.Page):
-    parsed = urllib.parse.urlparse(page.route)
-    params = dict(urllib.parse.parse_qsl(parsed.query))
+    selected_category = page.session.get("cat")
+    selected_year = page.session.get("year")
+    selected_week = page.session.get("week")
 
-    selected_month = params.get("month")
-    selected_category = params.get("cat")
+    start_date = end_date = None
+    if selected_week:
+        monday = datetime.datetime.strptime(f"{selected_week}-1", "%G-W%V-%u").date()
+        start_date = monday
+        end_date = monday + timedelta(days=7)
+    elif selected_year:
+        start_date = datetime.date(int(selected_year), 1, 1)
+        end_date = datetime.date(int(selected_year) + 1, 1, 1)
 
-    data_category = get_expenses_by_category()
-    data_date = get_expenses_grouped_by_date()
-
-    if selected_category:
-        data_category = [(name, value) for name, value in data_category if name == selected_category]
-
-    if selected_month:
-        data_date = [(m, v) for m, v in data_date if m == selected_month]
+    data_category = get_expenses_by_category(start_date, end_date, selected_category)
+    data_date = get_expenses_grouped_by_date(start_date, end_date, selected_category)
 
     categories = [item[0] for item in data_category] if data_category else []
     totals = [float(item[1]) for item in data_category] if data_category else []
@@ -36,56 +38,94 @@ def dashboard_page(page: ft.Page):
 
     fig_bar, ax_bar = plt.subplots(figsize=(12, 4))
     ax_bar.bar(months, monthly_totals, color="skyblue")
-    ax_bar.set_title("Dépenses mensuelles")
-    ax_bar.set_xlabel("Mois")
+    ax_bar.set_title("Dépenses")
+    ax_bar.set_xlabel("Période")
     ax_bar.set_ylabel("Total dépenses (€)")
     ax_bar.set_xticks(range(len(months)))
     ax_bar.set_xticklabels(months, rotation=45)
-    ax_bar.set_ylim(bottom=0)
+    if monthly_totals:
+        ax_bar.set_ylim(0, max(monthly_totals) * 1.2)
     for i, v in enumerate(monthly_totals):
-        ax_bar.text(i, v + 5, str(int(v)), ha='center', va='bottom', fontsize=8)
+        ax_bar.text(i, v + 1, str(int(v)), ha='center', va='bottom', fontsize=8)
     fig_bar.tight_layout()
     plt.close(fig_bar)
 
     fig_line, ax_line = plt.subplots(figsize=(12, 4))
     ax_line.plot(months, monthly_totals, color="blue", marker="o", linewidth=2)
     ax_line.set_title("Évolution des Dépenses")
-    ax_line.set_xlabel("Mois")
+    ax_line.set_xlabel("Période")
     ax_line.set_ylabel("Montant (€)")
     ax_line.set_xticks(range(len(months)))
     ax_line.set_xticklabels(months, rotation=45)
+    if monthly_totals:
+        ax_line.set_ylim(0, max(monthly_totals) * 1.2)
     ax_line.grid(True, linestyle="--", alpha=0.5)
     fig_line.tight_layout()
     plt.close(fig_line)
 
-    def on_month_change(e):
-        page.go(f"/?month={e.control.value}&cat={selected_category or ''}")
-
     def on_category_change(e):
-        page.go(f"/?month={selected_month or ''}&cat={e.control.value}")
+        page.session.set("cat", e.control.value)
+        page.clean()
+        page.add(dashboard_page(page))
+        page.update()
 
-    month_dropdown = ft.Dropdown(
-        label="Filtrer par mois",
-        options=[ft.dropdown.Option(m) for m in months],
-        value=selected_month,
-        width=200,
-        on_change=on_month_change
-    )
+    def on_year_change(e):
+        page.session.set("year", e.control.value)
+        page.session.set("week", None)
+        page.clean()
+        page.add(dashboard_page(page))
+        page.update()
 
+    def on_week_change(e):
+        page.session.set("week", e.control.value)
+        page.session.set("year", None)
+        page.clean()
+        page.add(dashboard_page(page))
+        page.update()
+
+    def on_reset_filters(e):
+        page.session.clear()
+        page.clean()
+        page.add(dashboard_page(page))
+        page.update()
+
+    all_categories = get_categories()
     category_dropdown = ft.Dropdown(
         label="Filtrer par catégorie",
-        options=[ft.dropdown.Option(c) for c in categories],
+        options=[ft.dropdown.Option(c.name) for c in all_categories],
         value=selected_category,
         width=200,
         on_change=on_category_change
+    )
+
+    all_months = sorted({item[0] for item in get_expenses_grouped_by_date()})
+    all_years = sorted({m.split("-")[0] for m in all_months})
+    year_dropdown = ft.Dropdown(
+        label="Filtrer par année",
+        options=[ft.dropdown.Option(y) for y in all_years],
+        value=selected_year,
+        width=200,
+        on_change=on_year_change
+    )
+
+    all_weeks = sorted({datetime.datetime.strptime(m, "%Y-%m").date().isocalendar()[:2] for m in all_months})
+    week_options = sorted({f"{y}-W{w:02d}" for y, w in all_weeks})
+    week_dropdown = ft.Dropdown(
+        label="Filtrer par semaine",
+        options=[ft.dropdown.Option(w) for w in week_options],
+        value=selected_week,
+        width=200,
+        on_change=on_week_change
     )
 
     return ft.Column([
         ft.Text("🏠 Tableau de Bord", size=32, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_900),
 
         ft.Row([
-            month_dropdown,
-            category_dropdown
+            year_dropdown,
+            week_dropdown,
+            category_dropdown,
+            ft.TextButton("🔄 Réinitialiser", on_click=on_reset_filters)
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=20),
 
         ft.Text(f"💰 Total Dépenses : {total_expenses:.2f} €", size=24, color="red", weight=ft.FontWeight.W_700),
