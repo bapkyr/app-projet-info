@@ -7,6 +7,7 @@ from db import get_expenses_by_category, get_expenses_grouped_by_date, get_categ
 from statistics import mean
 import datetime
 from datetime import timedelta
+from layout import navigation_bar, show_with_nav
 
 
 def dashboard_page(page: ft.Page):

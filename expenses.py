@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from db import engine, Expense, Category
 import datetime
 from datetime import timedelta
+from layout import navigation_bar, show_with_nav
 
 
 def expenses_page(page: ft.Page):

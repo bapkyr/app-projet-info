@@ -4,6 +4,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 from db import get_expenses_by_category
+from layout import navigation_bar, show_with_nav
 
 
 def categories_page(page: ft.Page):
