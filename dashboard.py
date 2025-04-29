@@ -164,7 +164,7 @@ def dashboard_page(page: ft.Page):
 
         ft.Row([
             ft.ElevatedButton("➕ Ajouter Dépense", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-expense")),
-            ft.ElevatedButton("📂 Voir Catégories", icon=ft.icons.CATEGORY, on_click=lambda e: page.go("/categories")),
+            ft.ElevatedButton("📂 Voir Catégories", icon=ft.icons.CATEGORY, on_click=lambda e: page.go("/category")),
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=20, expand=True),
 
     ], spacing=30, alignment=ft.MainAxisAlignment.CENTER, scroll=ft.ScrollMode.ALWAYS)
