@@ -8,7 +8,6 @@ from db import create_db, populate_db
 
 def main(page: ft.Page):
     create_db()
-    populate_db()
 
     page.title = "Gestion de budget"
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -29,26 +28,26 @@ def main(page: ft.Page):
 
     def router(route):
         page.clean()
-        page.add(navigation_bar)  # Ajouter la barre de navigation à chaque page
+        page.add(navigation_bar)
 
         if route == "/":
-            page.add(dashboard_page(page))  # Appel direct à la fonction de la page
+            page.add(dashboard_page(page))
         elif route == "/category":
-            page.add(categories_page(page))  # Appel direct à la fonction de la page
+            page.add(categories_page(page))
         elif route == "/expenses":
-            page.add(expenses_page(page))  # Appel direct à la fonction de la page
+            page.add(expenses_page(page))
         elif route.startswith("/add-expense"):
-            page.add(add_expense_page(page))  # Appel direct à la fonction de la page
+            page.add(add_expense_page(page))
         elif route.startswith("/edit-expense"):
             try:
                 exp_id = int(route.split("/")[-1])
-                page.add(edit_expense_page(page, exp_id))  # Appel direct à la fonction de la page
+                page.add(edit_expense_page(page, exp_id))
             except:
                 page.go("/expenses")
         elif route.startswith("/delete-expense"):
             try:
                 exp_id_del = int(route.split("/")[-1])
-                page.add(delete_expense_page(page, exp_id_del))  # Appel direct à la fonction de la page
+                page.add(delete_expense_page(page, exp_id_del))
             except:
                 page.go("/expenses")
         else:

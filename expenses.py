@@ -123,7 +123,7 @@ def expenses_page(page: ft.Page):
         ),
 
         ft.Row([
-            ft.ElevatedButton("➕ Ajouter Dépense", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-expense")),
-            ft.ElevatedButton("🔙 Retour", icon=ft.icons.HOME, on_click=lambda e: page.go("/"))
+            ft.ElevatedButton("Ajouter Dépense", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-expense")),
+            ft.ElevatedButton("Retour", icon=ft.icons.HOME, on_click=lambda e: page.go("/"))
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
     ], spacing=30, alignment=ft.MainAxisAlignment.CENTER, scroll=ft.ScrollMode.ALWAYS)
