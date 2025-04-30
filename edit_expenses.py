@@ -1,82 +1,124 @@
 import flet as ft
-from db import get_categories, add_expense, update_expense, del_expense
 from sqlmodel import Session, select
-from db import engine, Expense
+from db import engine, Expense, Category
 import datetime
 
 
+def get_categories():
+    with Session(engine) as session:
+        return session.exec(select(Category)).all()
+
 def add_expense_page(page: ft.Page):
     categories = get_categories()
-    cat_options = [ft.dropdown.Option(str(c.id), text=c.name) for c in categories]
 
-    date_picker = ft.TextField(label="Date", hint_text="YYYY-MM-DD")
-    amount_field = ft.TextField(label="Montant", hint_text="Ex: 100.50")
-    desc_field = ft.TextField(label="Description")
-    category_dropdown = ft.Dropdown(label="Catégorie", options=cat_options)
+    date_field = ft.TextField(label="Date (YYYY-MM-DD)")
+    amount_field = ft.TextField(label="Montant")
+    description_field = ft.TextField(label="Description", multiline=True)
+    category_dropdown = ft.Dropdown(
+        label="Catégorie existante",
+        options=[ft.dropdown.Option("Aucune")] + [ft.dropdown.Option(c.name) for c in categories]
+    )
+    new_category_field = ft.TextField(label="Nouvelle catégorie (optionnel)")
 
-    def on_submit(e):
+    def submit(e):
+        if not date_field.value or not amount_field.value:
+            page.snack_bar = ft.SnackBar(ft.Text("Veuillez remplir tous les champs obligatoires."))
+            page.snack_bar.open = True
+            page.update()
+            return
+
         try:
-            dt = datetime.datetime.strptime(date_picker.value, "%Y-%m-%d").date()
-            amt = float(amount_field.value)
-            cat = int(category_dropdown.value)
-            add_expense(dt, amt, cat)
-            page.go("/")
-        except Exception as err:
-            print("Erreur:", err)
+            with Session(engine) as session:
+                cat_name = new_category_field.value.strip() or category_dropdown.value
+                selected_cat = None
+                if cat_name and cat_name != "Aucune":
+                    selected_cat = session.exec(select(Category).where(Category.name == cat_name)).first()
+                    if not selected_cat:
+                        selected_cat = Category(name=cat_name)
+                        session.add(selected_cat)
+                        session.commit()
+                        session.refresh(selected_cat)
+
+                expense = Expense(
+                    date=datetime.datetime.strptime(date_field.value, "%Y-%m-%d").date(),
+                    amount=float(amount_field.value),
+                    description=description_field.value,
+                    cat_id=selected_cat.id if selected_cat else None
+                )
+                session.add(expense)
+                session.commit()
+
+            page.go("/expenses")
+        except Exception as ex:
+            page.snack_bar = ft.SnackBar(ft.Text(f"Erreur lors de l'ajout de la dépense : {ex}"))
+            page.snack_bar.open = True
+            page.update()
 
     return ft.Column([
-        ft.Text("➕ Ajouter une Dépense", size=28, weight=ft.FontWeight.BOLD),
-        date_picker,
+        ft.Text("➕ Ajouter une Dépense", size=32, weight=ft.FontWeight.BOLD),
+        date_field,
         amount_field,
-        desc_field,
+        description_field,
         category_dropdown,
-        ft.ElevatedButton("Enregistrer", on_click=on_submit),
-        ft.TextButton("Annuler", on_click=lambda e: page.go("/"))
-    ], spacing=20, alignment=ft.MainAxisAlignment.CENTER)
-
+        new_category_field,
+        ft.ElevatedButton("Valider", on_click=submit)
+    ], spacing=20)
 
 def edit_expense_page(page: ft.Page, expense_id: int):
     with Session(engine) as session:
         expense = session.get(Expense, expense_id)
-    categories = get_categories()
-    cat_options = [ft.dropdown.Option(str(c.id), text=c.name) for c in categories]
+        categories = get_categories()
 
-    date_picker = ft.TextField(label="Date", value=str(expense.date))
+    date_field = ft.TextField(label="Date", value=str(expense.date))
     amount_field = ft.TextField(label="Montant", value=str(expense.amount))
-    desc_field = ft.TextField(label="Description", value=expense.description or "")
-    category_dropdown = ft.Dropdown(label="Catégorie", value=str(expense.cat_id), options=cat_options)
+    description_field = ft.TextField(label="Description", value=expense.description or "", multiline=True)
+    category_dropdown = ft.Dropdown(
+        label="Catégorie existante",
+        value=session.get(Category, expense.cat_id).name if expense.cat_id else None,
+        options=[ft.dropdown.Option(c.name) for c in categories]
+    )
+    new_category_field = ft.TextField(label="Nouvelle catégorie (optionnel)")
 
-    def on_submit(e):
-        try:
-            dt = datetime.datetime.strptime(date_picker.value, "%Y-%m-%d").date()
-            amt = float(amount_field.value)
-            cat = int(category_dropdown.value)
-            update_expense(expense_id, new_date=dt, new_amount=amt, new_cat=cat)
-            page.go("/expenses")
-        except Exception as err:
-            print("Erreur:", err)
+    def submit(e):
+        with Session(engine) as session:
+            cat_name = new_category_field.value.strip() or category_dropdown.value
+            selected_cat = session.exec(select(Category).where(Category.name == cat_name)).first()
+            if not selected_cat:
+                selected_cat = Category(name=cat_name)
+                session.add(selected_cat)
+                session.commit()
+                session.refresh(selected_cat)
 
-    return ft.Column([
-        ft.Text("✏️ Modifier Dépense", size=28, weight=ft.FontWeight.BOLD),
-        date_picker,
-        amount_field,
-        desc_field,
-        category_dropdown,
-        ft.ElevatedButton("Enregistrer", on_click=on_submit),
-        ft.TextButton("Annuler", on_click=lambda e: page.go("/expenses"))
-    ], spacing=20, alignment=ft.MainAxisAlignment.CENTER)
-
-
-def delete_expense_page(page: ft.Page, expense_id: int):
-    def on_confirm(e):
-        del_expense(expense_id)
+            expense.date = date_field.value
+            expense.amount = float(amount_field.value)
+            expense.description = description_field.value
+            expense.cat_id = selected_cat.id
+            session.add(expense)
+            session.commit()
         page.go("/expenses")
 
     return ft.Column([
-        ft.Text("❌ Supprimer Dépense", size=28, weight=ft.FontWeight.BOLD, color=ft.colors.RED),
-        ft.Text("Êtes-vous sûr de vouloir supprimer cette dépense ?"),
-        ft.Row([
-            ft.ElevatedButton("Oui, Supprimer", color=ft.colors.WHITE, bgcolor=ft.colors.RED, on_click=on_confirm),
-            ft.TextButton("Annuler", on_click=lambda e: page.go("/expenses"))
-        ], alignment=ft.MainAxisAlignment.CENTER)
-    ], spacing=30, alignment=ft.MainAxisAlignment.CENTER)
+        ft.Text("✏️ Modifier la Dépense", size=32, weight=ft.FontWeight.BOLD),
+        date_field,
+        amount_field,
+        description_field,
+        category_dropdown,
+        new_category_field,
+        ft.ElevatedButton("Valider", on_click=submit)
+    ], spacing=20)
+
+def delete_expense_page(page: ft.Page, expense_id: int):
+    with Session(engine) as session:
+        expense = session.get(Expense, expense_id)
+
+    def confirm_delete(e):
+        with Session(engine) as session:
+            session.delete(expense)
+            session.commit()
+        page.go("/expenses")
+
+    return ft.Column([
+        ft.Text(f"🗑️ Supprimer la Dépense {expense.description}", size=32, weight=ft.FontWeight.BOLD),
+        ft.ElevatedButton("Confirmer la suppression", on_click=confirm_delete),
+        ft.ElevatedButton("Annuler", on_click=lambda e: page.go("/expenses"))
+    ], spacing=20)

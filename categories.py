@@ -3,14 +3,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
-from db import get_expenses_by_category
-from layout import navigation_bar, show_with_nav
+from db import get_expenses_by_category, get_categories
+from sqlmodel import Session, select
+from db import engine, Category
 
 
 def categories_page(page: ft.Page):
     selected_year = page.session.get("year")
     selected_week = page.session.get("week")
-    selected_category = page.session.get("cat")
 
     import datetime
     from datetime import timedelta
@@ -38,11 +38,53 @@ def categories_page(page: ft.Page):
     plt.tight_layout()
     plt.close(fig)
 
+    with Session(engine) as session:
+        all_categories = session.exec(select(Category)).all()
+
+    category_rows = []
+    for category in all_categories:
+        category_rows.append(
+            ft.DataRow(
+                cells=[
+                    ft.DataCell(ft.Text(category.name)),
+                    ft.DataCell(ft.Row([
+                        ft.IconButton(
+                            icon=ft.icons.DELETE,
+                            tooltip="Supprimer",
+                            on_click=lambda e, id=category.id: delete_category_action(id, page)
+                        )
+                    ]))
+                ]
+            )
+        )
+
+
+    def delete_category_action(category_id, page):
+        with Session(engine) as session:
+            category = session.get(Category, category_id)
+            if category:
+                print(f"Suppression de la catégorie : {category.name}")
+                session.delete(category)
+                session.commit()
+                page.snack_bar = ft.SnackBar(ft.Text(f"Catégorie '{category.name}' supprimée avec succès."))
+                page.snack_bar.open = True
+                page.go("/category")
+
     return ft.Column([
         ft.Text("📂 Catégories de Dépenses", size=32, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_900),
+
         MatplotlibChart(fig, expand=True),
+
+        ft.DataTable(
+            columns=[
+                ft.DataColumn(label=ft.Text("Nom de la Catégorie")),
+                ft.DataColumn(label=ft.Text("Actions"))
+            ],
+            rows=category_rows
+        ),
+
         ft.Row([
-            ft.ElevatedButton("Ajouter Dépense", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-expense")),
+            ft.ElevatedButton("Ajouter Catégorie", icon=ft.icons.ADD, on_click=lambda e: page.go("/add-category")),
             ft.ElevatedButton("Retour", icon=ft.icons.HOME, on_click=lambda e: page.go("/"))
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
     ], spacing=30, alignment=ft.MainAxisAlignment.CENTER, scroll=ft.ScrollMode.ALWAYS)
