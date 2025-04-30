@@ -127,10 +127,9 @@ def dashboard_page(page: ft.Page):
             week_dropdown,
             category_dropdown,
             ft.TextButton("🔄 Réinitialiser", on_click=on_reset_filters)
-        ], alignment=ft.MainAxisAlignment.CENTER, spacing=20),
+        ], alignment=ft.MainAxisAlignment.START, spacing=20, scroll=ft.ScrollMode.ALWAYS),
 
-        ft.Text(f"💰 Total Dépenses : {total_expenses:.2f} €", size=24, color="red", weight=ft.FontWeight.W_700),
-
+        # Informations principales avec scroll horizontal
         ft.Row([
             ft.Card(content=ft.Container(ft.Column([
                 ft.Text("📈 Max", size=18),
@@ -146,8 +145,11 @@ def dashboard_page(page: ft.Page):
                 ft.Text("🏆 Mois Top", size=18),
                 ft.Text(top_month, size=20, weight=ft.FontWeight.BOLD)
             ]), padding=10, bgcolor=ft.colors.TEAL_50)),
-        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
+        ], alignment=ft.MainAxisAlignment.START, spacing=20, scroll=ft.ScrollMode.ALWAYS),
 
+        ft.Text(f"💰 Total Dépenses : {total_expenses:.2f} €", size=24, color="red", weight=ft.FontWeight.W_700),
+
+        # Graphiques
         ft.Card(content=ft.Container(
             content=MatplotlibChart(fig_bar, expand=True),
             padding=10,
