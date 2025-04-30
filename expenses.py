@@ -7,6 +7,8 @@ from datetime import timedelta
 from layout import navigation_bar, show_with_nav
 
 
+
+
 def expenses_page(page: ft.Page):
     selected_year = page.session.get("year")
     selected_week = page.session.get("week")
